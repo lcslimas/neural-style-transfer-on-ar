@@ -44,24 +44,24 @@ public class AugmentedImageRenderer {
   public void createOnGlThread(Context context) throws IOException {
 
     imageFrameUpperLeft.createOnGlThread(
-        context, "models/frame_upper_left.obj", "models/frame_base.png");
-    imageFrameUpperLeft.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
+        context, "models/img-changed.obj", "models/img-changed.png");
+    imageFrameUpperLeft.setMaterialProperties(0.0f, 3.5f, 1.0f, 2.0f);
     imageFrameUpperLeft.setBlendMode(BlendMode.AlphaBlending);
-
-    imageFrameUpperRight.createOnGlThread(
-        context, "models/frame_upper_right.obj", "models/frame_base.png");
-    imageFrameUpperRight.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
-    imageFrameUpperRight.setBlendMode(BlendMode.AlphaBlending);
-
-    imageFrameLowerLeft.createOnGlThread(
-        context, "models/frame_lower_left.obj", "models/frame_base.png");
-    imageFrameLowerLeft.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
-    imageFrameLowerLeft.setBlendMode(BlendMode.AlphaBlending);
-
-    imageFrameLowerRight.createOnGlThread(
-        context, "models/frame_lower_right.obj", "models/frame_base.png");
-    imageFrameLowerRight.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
-    imageFrameLowerRight.setBlendMode(BlendMode.AlphaBlending);
+//
+//    imageFrameUpperRight.createOnGlThread(
+//        context, "models/frame_upper_right.obj", "models/frame_base.png");
+//    imageFrameUpperRight.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
+//    imageFrameUpperRight.setBlendMode(BlendMode.AlphaBlending);
+//
+//    imageFrameLowerLeft.createOnGlThread(
+//        context, "models/frame_lower_left.obj", "models/frame_base.png");
+//    imageFrameLowerLeft.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
+//    imageFrameLowerLeft.setBlendMode(BlendMode.AlphaBlending);
+//
+//    imageFrameLowerRight.createOnGlThread(
+//        context, "models/frame_lower_right.obj", "models/frame_base.png");
+//    imageFrameLowerRight.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
+//    imageFrameLowerRight.setBlendMode(BlendMode.AlphaBlending);
   }
 
   public void draw(
@@ -73,49 +73,49 @@ public class AugmentedImageRenderer {
     float[] tintColor =
         convertHexToColor(TINT_COLORS_HEX[augmentedImage.getIndex() % TINT_COLORS_HEX.length]);
 
-    Pose[] localBoundaryPoses = {
-      Pose.makeTranslation(
-          -0.5f * augmentedImage.getExtentX(),
-          0.0f,
-          -0.5f * augmentedImage.getExtentZ()), // upper left
-      Pose.makeTranslation(
-          0.5f * augmentedImage.getExtentX(),
-          0.0f,
-          -0.5f * augmentedImage.getExtentZ()), // upper right
-      Pose.makeTranslation(
-          0.5f * augmentedImage.getExtentX(),
-          0.0f,
-          0.5f * augmentedImage.getExtentZ()), // lower right
-      Pose.makeTranslation(
-          -0.5f * augmentedImage.getExtentX(),
-          0.0f,
-          0.5f * augmentedImage.getExtentZ()) // lower left
-    };
+    Pose pose = Pose.makeTranslation(
+            0.0f * augmentedImage.getExtentX(),
+            0.0f,
+            -0.0f * augmentedImage.getExtentZ()); // upper left
+//    Pose[] localBoundaryPoses = {
+//      Pose.makeTranslation(
+//          0.5f * augmentedImage.getExtentX(),
+//          0.0f,
+//          -0.5f * augmentedImage.getExtentZ()), // upper right
+//      Pose.makeTranslation(
+//          0.5f * augmentedImage.getExtentX(),
+//          0.0f,
+//          0.5f * augmentedImage.getExtentZ()), // lower right
+//      Pose.makeTranslation(
+//          -0.5f * augmentedImage.getExtentX(),
+//          0.0f,
+//          0.5f * augmentedImage.getExtentZ()) // lower left
+//    };
 
     Pose anchorPose = centerAnchor.getPose();
-    Pose[] worldBoundaryPoses = new Pose[4];
-    for (int i = 0; i < 4; ++i) {
-      worldBoundaryPoses[i] = anchorPose.compose(localBoundaryPoses[i]);
-    }
-
-    float scaleFactor = 1.0f;
+//    Pose[] worldBoundaryPoses = new Pose[4];
+//    for (int i = 0; i < 4; ++i) {
+//      worldBoundaryPoses[i] = anchorPose.compose(localBoundaryPoses[i]);
+//    }
+    Pose poseWithAnchor = anchorPose.compose(pose);
+    float scaleFactor = Math.max(augmentedImage.getExtentX(), augmentedImage.getExtentZ());
     float[] modelMatrix = new float[16];
 
-    worldBoundaryPoses[0].toMatrix(modelMatrix, 0);
+    poseWithAnchor.toMatrix(modelMatrix, 0);
     imageFrameUpperLeft.updateModelMatrix(modelMatrix, scaleFactor);
     imageFrameUpperLeft.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
-
-    worldBoundaryPoses[1].toMatrix(modelMatrix, 0);
-    imageFrameUpperRight.updateModelMatrix(modelMatrix, scaleFactor);
-    imageFrameUpperRight.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
-
-    worldBoundaryPoses[2].toMatrix(modelMatrix, 0);
-    imageFrameLowerRight.updateModelMatrix(modelMatrix, scaleFactor);
-    imageFrameLowerRight.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
-
-    worldBoundaryPoses[3].toMatrix(modelMatrix, 0);
-    imageFrameLowerLeft.updateModelMatrix(modelMatrix, scaleFactor);
-    imageFrameLowerLeft.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
+//
+//    worldBoundaryPoses[1].toMatrix(modelMatrix, 0);
+//    imageFrameUpperRight.updateModelMatrix(modelMatrix, scaleFactor);
+//    imageFrameUpperRight.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
+//
+//    worldBoundaryPoses[2].toMatrix(modelMatrix, 0);
+//    imageFrameLowerRight.updateModelMatrix(modelMatrix, scaleFactor);
+//    imageFrameLowerRight.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
+//
+//    worldBoundaryPoses[3].toMatrix(modelMatrix, 0);
+//    imageFrameLowerLeft.updateModelMatrix(modelMatrix, scaleFactor);
+//    imageFrameLowerLeft.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, tintColor);
   }
 
   private static float[] convertHexToColor(int colorHex) {
