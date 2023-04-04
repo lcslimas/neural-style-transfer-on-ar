@@ -27,7 +27,7 @@ import java.io.IOException;
 public class AugmentedImageRenderer {
   private static final String TAG = "AugmentedImageRenderer";
 
-  private static final float TINT_INTENSITY = 0.1f;
+  private static final float TINT_INTENSITY = 1.0f;
   private static final float TINT_ALPHA = 1.0f;
   private static final int[] TINT_COLORS_HEX = {
     0x000000, 0xF44336, 0xE91E63, 0x9C27B0, 0x673AB7, 0x3F51B5, 0x2196F3, 0x03A9F4, 0x00BCD4,
@@ -39,14 +39,11 @@ public class AugmentedImageRenderer {
   private final ObjectRenderer imageFrameLowerLeft = new ObjectRenderer();
   private final ObjectRenderer imageFrameLowerRight = new ObjectRenderer();
 
+  Context contextGlobal;
   public AugmentedImageRenderer() {}
 
   public void createOnGlThread(Context context) throws IOException {
-
-    imageFrameUpperLeft.createOnGlThread(
-        context, "models/img-changed.obj", "models/img-changed.png");
-    imageFrameUpperLeft.setMaterialProperties(0.0f, 3.5f, 1.0f, 2.0f);
-    imageFrameUpperLeft.setBlendMode(BlendMode.AlphaBlending);
+    contextGlobal = context;
 //
 //    imageFrameUpperRight.createOnGlThread(
 //        context, "models/frame_upper_right.obj", "models/frame_base.png");
@@ -69,9 +66,18 @@ public class AugmentedImageRenderer {
       float[] projectionMatrix,
       AugmentedImage augmentedImage,
       Anchor centerAnchor,
-      float[] colorCorrectionRgba) {
+      float[] colorCorrectionRgba, String imgDetected) {
     float[] tintColor =
         convertHexToColor(TINT_COLORS_HEX[augmentedImage.getIndex() % TINT_COLORS_HEX.length]);
+
+    try {
+      imageFrameUpperLeft.createOnGlThread(
+              contextGlobal, "models/img-changed-test.obj", imgDetected);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    imageFrameUpperLeft.setMaterialProperties(0.0f, 1.5f, 0.0f, 0.0f);
+    imageFrameUpperLeft.setBlendMode(BlendMode.AlphaBlending);
 
     Pose pose = Pose.makeTranslation(
             0.0f * augmentedImage.getExtentX(),
@@ -97,6 +103,8 @@ public class AugmentedImageRenderer {
 //    for (int i = 0; i < 4; ++i) {
 //      worldBoundaryPoses[i] = anchorPose.compose(localBoundaryPoses[i]);
 //    }
+
+
     Pose poseWithAnchor = anchorPose.compose(pose);
     float scaleFactor = Math.max(augmentedImage.getExtentX(), augmentedImage.getExtentZ());
     float[] modelMatrix = new float[16];

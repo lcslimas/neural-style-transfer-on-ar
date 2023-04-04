@@ -52,8 +52,11 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -76,6 +79,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
   private ImageView fitToScanView;
   private RequestManager glideRequestManager;
 
+  private AugmentedImageDatabase augmentedImageDatabase;
   private boolean installRequested;
 
   private Session session;
@@ -90,12 +94,15 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
   // Augmented image configuration and rendering.
   // Load a single image (true) or a pre-generated image database (false).
-  private final boolean useSingleImage = false;
+  private final boolean useSingleImage = true;
   // Augmented image and its associated center pose anchor, keyed by index of the augmented image in
   // the
   // database.
   private final Map<Integer, Pair<AugmentedImage, Anchor>> augmentedImageMap = new HashMap<>();
 
+  private List<Bitmap> bitMaps = new ArrayList<>();
+
+  private List<String> imgNames = Arrays.asList( "default.jpg", "frame_base.png");
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -338,9 +345,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
           // Create a new anchor for newly found images.
           if (!augmentedImageMap.containsKey(augmentedImage.getIndex())) {
-            Anchor centerPoseAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
-            augmentedImageMap.put(
-                augmentedImage.getIndex(), Pair.create(augmentedImage, centerPoseAnchor));
+              Anchor centerPoseAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
+              augmentedImageMap.put(
+                      augmentedImage.getIndex(), Pair.create(augmentedImage, centerPoseAnchor));
           }
           break;
 
@@ -360,7 +367,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
       switch (augmentedImage.getTrackingState()) {
         case TRACKING:
           augmentedImageRenderer.draw(
-              viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba);
+              viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba, imgNames.get(augmentedImage.getIndex()));
           break;
         default:
           break;
@@ -369,7 +376,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
   }
 
   private boolean setupAugmentedImageDatabase(Config config) {
-    AugmentedImageDatabase augmentedImageDatabase;
 
     // There are two ways to configure an AugmentedImageDatabase:
     // 1. Add Bitmap to DB directly
@@ -378,13 +384,16 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     // * shorter setup time
     // * doesn't require images to be packaged in apk.
     if (useSingleImage) {
-      Bitmap augmentedImageBitmap = loadAugmentedImageBitmap();
+      List<Bitmap> augmentedImageBitmap = loadAugmentedImageBitmap();
       if (augmentedImageBitmap == null) {
         return false;
       }
 
       augmentedImageDatabase = new AugmentedImageDatabase(session);
-      augmentedImageDatabase.addImage("image_name", augmentedImageBitmap);
+      int i;
+      augmentedImageBitmap.forEach(bitMap -> {
+        augmentedImageDatabase.addImage("image_name" +  augmentedImageDatabase.getNumImages(), bitMap);
+      });
       // If the physical size of the image is known, you can instead use:
       //     augmentedImageDatabase.addImage("image_name", augmentedImageBitmap, widthInMeters);
       // This will improve the initial detection speed. ARCore will still actively estimate the
@@ -404,12 +413,17 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     return true;
   }
 
-  private Bitmap loadAugmentedImageBitmap() {
-    try (InputStream is = getAssets().open("default.jpg")) {
-      return BitmapFactory.decodeStream(is);
-    } catch (IOException e) {
-      Log.e(TAG, "IO exception loading augmented image bitmap.", e);
-    }
-    return null;
+  private List<Bitmap> loadAugmentedImageBitmap() {
+      imgNames.forEach(imgName -> {
+        InputStream is;
+        try {
+          is = getAssets().open(imgName);
+          Bitmap bitMapImage = BitmapFactory.decodeStream(is);
+          bitMaps.add(bitMapImage);
+        } catch (IOException e) {
+          Log.e(TAG, "IO exception loading augmented image bitmap.", e);
+        }
+      });
+    return bitMaps;
   }
 }
